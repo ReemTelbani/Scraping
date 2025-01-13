@@ -263,7 +263,190 @@ def categorize_listing(text):
     return categorized_listing
 
 
+def login(driver):
+    time.sleep(1)
+    driver.refresh()
+    print(driver.title)
+    
+    # Step 1: Click on the login button
+    login_button = WebDriverWait(driver, 20).until(
+        EC.element_to_be_clickable((By.XPATH, "//button[span[text()='تسجيل الدخول']]"))
+    )
+    ActionChains(driver).move_to_element(login_button).click().perform()
+    random_delay()
+    
+    # Step 2: Wait for the login card to appear
+    WebDriverWait(driver, 20).until(
+        EC.visibility_of_element_located((By.XPATH, "//button[span[text()='تسجيل الدخول باستخدام البريد الإلكتروني']]"))
+    )
+    
+    # Step 3: Click on the "Login with Email" button
+    email_login_button = driver.find_element(By.XPATH, "//button[span[text()='تسجيل الدخول باستخدام البريد الإلكتروني']]")
+    ActionChains(driver).move_to_element(email_login_button).click().perform()
+    random_delay()
+    
+    # Step 4: Wait for the email and password fields to appear
+    WebDriverWait(driver, 20).until(
+        EC.visibility_of_element_located((By.XPATH, "//input[@id='email']"))
+    )
+    
+    # Step 5: Enter email with typing mimic
+    email_input = driver.find_element(By.XPATH, "//input[@id='email']")
+    mimic_typing(email_input, "scraper.alpha.team@gmail.com")  # Replace with your email
+    random_delay()
+    
+    # Step 6: Enter password with typing mimic
+    password_input = driver.find_element(By.XPATH, "//input[@id='password']")
+    mimic_typing(password_input, "Scr@pyScr@py25")  # Replace with your password
+    random_delay()
+    
+    # Step 7: Click on the final login button
+    login_submit_button = driver.find_element(By.XPATH, "//button[span[text()='تسجيل الدخول']]")
+    time.sleep(50)
+    ActionChains(driver).move_to_element(login_submit_button).click().perform()
+    time.sleep(1)
+    driver.refresh()
+    # Step 8: Wait for a while after logging in
+    time.sleep(50)
+    
+    # Optionally: Get cookies and set them again after refresh
+    cookies = driver.get_cookies()
+    print("cookies: ",cookies)
+    
+    # Step 9: Refresh the page to ensure it's reading that you are logged in
+    driver.refresh()
+    random_delay()
+    
+    # Re-adding the cookies
+    for cookie in cookies:
+        driver.add_cookie(cookie)
+    driver.refresh()
+    
+    # Ensure the logged-in state by checking for a specific element that appears when logged in
+    try:
+        logged_in_element = WebDriverWait(driver, 20).until(
+            EC.presence_of_element_located((By.XPATH, "//*[@id='logged-in-element']"))  # Replace with the actual element
+        )
+        print("Successfully logged in and recognized.")
+        return True
+    except:
+        print("Failed to log in or recognize login state.")
+    
+        False
 
+def navigate_to_ad_details(driver,ad_link):
+
+    # Wait for the anchor element to load
+    try:
+        driver.get(ad_link)
+        #driver.execute_script("window.open(arguments[0], '_self');", ad_link)
+        time.sleep(20)
+        print(driver.title)
+        
+        mimic_human(driver)
+        print(" 5- navigate_to_the_ad_details start")
+        # Locate the anchor element with the specific text
+        anchor_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//a[span[text()='الصفحة الشخصية']]"))
+        )
+        mimic_human(driver)
+        # Navigate down to find the specific span element
+        span_element = anchor_element.find_element(By.XPATH, ".//div[1]/div[1]/span")
+    
+        # Extract the text from the span
+        advertiser_name = span_element.text
+        print("advertiser_name found:", advertiser_name)
+
+        ################################################################
+
+        # Wait for the button to be present
+        button_element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//button[svg]"))
+        )
+    
+        # Scroll to the button (if necessary)
+        driver.execute_script("arguments[0].scrollIntoView();", button_element)
+    
+        # Create ActionChains object
+        actions = ActionChains(driver)
+    
+        # Move to the button and hover
+        actions.move_to_element(button_element).perform()
+    
+        # Random delay before clicking
+        time.sleep(random.uniform(0.5, 2.0))  # Random delay between 0.5 and 2 seconds
+    
+        # Click the button
+        actions.click(button_element).perform()
+    
+        # Wait for a few seconds for the mobile number to appear
+        time.sleep(5)
+    
+        # Now locate the button again to get the updated mobile number
+        updated_mobile_number_element = driver.find_element(By.XPATH, "//button[svg]//span/span")
+    
+        # Extract the mobile number text
+        mobile_number = updated_mobile_number_element.text
+        print("Found mobile number:", mobile_number)
+        print("navigate_to_the_ad_details status success" )
+        
+        status =True
+    
+    except Exception as e:
+        print("An error occurred:", e)
+        status = False
+        advertiser_name =None
+        mobile_number=None
+        print("navigate_to_the_ad_details status failed" )
+
+    print("navigate_to_the_ad_details status",  )
+
+    print(" 5- navigate_to_the_ad_details end")
+
+
+    return status, advertiser_name, mobile_number
+
+
+
+def new_scrape_page(driver, ad_links, page_number, search_keyword):
+    links = []
+    for link in ad_links:
+        href = link.get_attribute('href')
+        if href not in links:
+            links.append(href)
+    for i in links:
+        status, advertiser_name, mobile_number = navigate_to_ad_details(driver, i)
+        
+    print("len(links) ",len(links))
+    
+    # Find all elements that match the CSS selector 
+    list_ele = driver.find_elements(By.CSS_SELECTOR, "[aria-label='Listing']") 
+
+    # Loop over the elements and print their text 
+    c=0
+    ads_list = []
+    for element in list_ele: 
+        #print(element.text)
+        #print("")
+        text = element.text
+        result = categorize_listing(text)
+        result['ad_link'] = links[c]
+        result['insertion_date'] = datetime.today().strftime('%Y-%m-%d')
+        result['page_number']=page_number
+        result['search_keyword']=search_keyword
+        result['advertiser_name']=advertiser_name
+        result['mobile_number']=mobile_number
+        result['links_count_in_page']= len(ad_links)
+        ads_list.append(result)
+        #ads_dic[c]=text
+        # Save the data to MongoDB
+        save_to_mongo(result, 'olx_ads', 'ads_temp')
+        c=c+1
+    #print("ads_dic.keys ",len(ads_dic.keys()))
+    #print(ads_dic) 
+    print("Number of returned ads from page number: ",str(page_number), " is ",str(len(ads_list)))
+    
+    return True, ads_list
 
 
 
@@ -314,7 +497,7 @@ def scrape_page_flow(driver, page_number, search_keyword):
         #print(f"Number of matching links: {len(set(ad_links))}")
         mimic_human(driver)
     
-        print("3- scarping_ads_links start TODO")
+        print("3- scarping_ads_links start TODO") # new_scrape_page(driver, ad_links, page_number, search_keyword)
         page_scrapping_status, ads_list = old_scrape_page(driver, ad_links, page_number, search_keyword)
         print("3- scarping_ads_links done TODO")
     
@@ -413,20 +596,15 @@ def SCRAPER(keyword, requested_returned_ads_count):
        
         # Set up Chrome options
         options = Options()
-        #ua = UserAgent()
-        #options.add_argument(f'user-agent={ua.random}')
-        #options.add_argument("--incognito")
-        #options.add_argument("--headless")  # Run in headless mode
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
+        
+        
+        options = Options()
         options.add_argument("--start-maximized")
         options.add_argument("--disable-blink-features=AutomationControlled")  # Help prevent detection ,  adding argument to disable the AutomationControlled flag 
         options.add_experimental_option("excludeSwitches", ["enable-automation"]) # exclude the collection of enable-automation switches 
         options.add_experimental_option("useAutomationExtension", False)  # turn-off userAutomationExtension 
-        options.add_argument("window-size=1920,1080")
-        options.add_argument("--disable-extensions")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--ignore-certificate-errors")
+
+       
     
         # List of proxy servers
         proxies = [
@@ -455,6 +633,7 @@ def SCRAPER(keyword, requested_returned_ads_count):
         
         driver.get(end_point)
         print(driver.title)
+        #login(driver)
         
         random_delay()
         
@@ -874,7 +1053,7 @@ def retrive_ads():
     subject ="retrive sample of requested ads"
     body = sample_str
 
-    #SEND_SAMPLE_TO_EMAIL(sender_email, sender_password, recipient_email, subject, body)
+    SEND_SAMPLE_TO_EMAIL(sender_email, sender_password, recipient_email, subject, body)
     return jsonify(status)
 
 
