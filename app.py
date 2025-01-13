@@ -55,16 +55,7 @@ from email.mime.multipart import MIMEMultipart
 # Load environment variables from .env file
 env_file = ".env"
 load_dotenv(dotenv_path=env_file)
-'''
-# Get the current directory
-current_directory = os.getcwd()
 
-# Loop through all files in the current directory
-for filename in os.listdir(current_directory):
-    file_path = os.path.join(current_directory, filename)
-    if os.path.isfile(file_path):
-        print(filename)
-'''
 
 app = Flask(__name__)
 
@@ -108,7 +99,7 @@ def save_to_mongo(data, db_name, collection_name):
     result = collection.insert_one(data)
 
     # Print the inserted ID
-    print(f'Document inserted with ID: {result.inserted_id}')
+    #print(f'Document inserted with ID: {result.inserted_id}')
 
 '''
 def retrieve_from_mongo(db_name, collection_name, query=None):
@@ -144,9 +135,7 @@ def retrieve_from_mongo(db_name, collection_name, query):
     # Step 3: Access the collection
     collection = db[collection_name]
 
-
-
-        # Step 4: Query the collection
+    # Step 4: Query the collection
     if query is None:
         # Retrieve all documents if no query is provided
         results = ""
@@ -162,7 +151,6 @@ def retrieve_from_mongo(db_name, collection_name, query):
 
 
 def categorize_listing(text):
-    print("we are here in categorize listing start")
     # Split the listing into lines
     lines = text.splitlines()
 
@@ -172,13 +160,11 @@ def categorize_listing(text):
     description = None
     ad_creation_time = None
 
-    print("categorize listing 1")
 
     # Check if the first line contains "مميز"
     if "مميز" in lines[0]:
         extra_info = lines[0].strip()  # First line as extra info
 
-    print("categorize listing 2")
     # Check for price in the relevant lines
     if "ج.م" in lines[1]:
         price = lines[1].strip()
@@ -186,10 +172,6 @@ def categorize_listing(text):
         price = lines[0].strip()
     else:
         price = None
-
-    print("categorize listing 3")
-
-    
 
     if "منذ" in lines[2]:
         temp_list= lines[2].strip().split('منذ')
@@ -210,8 +192,6 @@ def categorize_listing(text):
         ad_creation_time = None
         place = None
 
-    print("categorize listing 4")
-
     # Combine remaining lines for description
     description = " ".join(lines[1:])  # Combine to form the description
 
@@ -224,70 +204,19 @@ def categorize_listing(text):
         'special_ad': extra_info,
         
     }
-    print("we are here in categorize listing end")
-
     return categorized_listing
 
 
+def extract_number(text):
+    # Use regular expressions to find all digits in the text
+    match = re.search(r'\d+', text)
+    if match:
+        # Convert the found digits to an integer
+        return int(match.group(0))
+    else:
+        # Return None if no digits are found
+        return 0
 
-def categorize_listing(text):
-    # Split the listing into lines
-    lines = text.splitlines()
-
-    # Initialize variables
-    extra_info = None
-    price = None
-    description = None
-    ad_creation_time = None
-
-    # Split the text into lines
-    #lines = text.split('\n')
-    
-    # Check for the word "منذ" in each line
-    for i, line in enumerate(lines, start=1):
-        if "منذ" in line:
-            #print(f"The word 'منذ' is in line {i}: {line}")
-            temp_list= lines[i].strip().split('منذ')
-            ad_creation_time = temp_list[1]
-            place= temp_list[0]
-            #break
-        else:
-            ad_creation_time=None
-            place=None
-            #print("The word 'منذ' was not found in the text.")
-    
-        if "ج.م" in line:
-            #print(f"The word 'ج.م' is in line {i}: {line}")
-            price = lines[i].strip()
-            #break
-        else:
-            price=None
-            #print("The word 'ج.م' was not found in the text.")
-
-            
-        if "مميز" in line:
-            #print(f"The word 'مميز' is in line {i}: {line}")
-            extra_info = lines[i].strip()
-            #break
-        else:
-            extra_info=None
-            #print("The word 'مميز' was not found in the text.")
-
-        
-    # Combine remaining lines for description
-    description = " ".join(lines[1:])  # Combine to form the description
-
-    # Create a dictionary for the current listing
-    categorized_listing = {
-        'price': price,
-        'ad_creation_time_since': ad_creation_time,
-        'description': description,
-        'place':place,
-        'special_ad': extra_info,
-        
-    }
-
-    return categorized_listing
        
 
 def categorize_listing(text):
@@ -313,12 +242,10 @@ def categorize_listing(text):
         
         if "ج.م" in line:
             # Print the line for debugging
-            #print(f"The word 'ج.م' is in line: {line}")
             price = line.strip()
 
         if "مميز" in line:
             # Print the line for debugging
-            #print(f"The word 'مميز' is in line: {line}")
             extra_info = line.strip()
 
     # Combine remaining lines for description, except the first line
@@ -337,18 +264,18 @@ def categorize_listing(text):
 
 
 
+
+
+
 def old_scrape_page(driver, ad_links, page_number, search_keyword):
-    
     links = []
     for link in ad_links:
         href = link.get_attribute('href')
         if href not in links:
             links.append(href)
-
-
     #for i in links:
     #    print(i)
-    #print("len(links) ",len(links))
+    print("len(links) ",len(links))
     
     # Find all elements that match the CSS selector 
     list_ele = driver.find_elements(By.CSS_SELECTOR, "[aria-label='Listing']") 
@@ -367,32 +294,32 @@ def old_scrape_page(driver, ad_links, page_number, search_keyword):
         result['search_keyword']=search_keyword
         result['links_count_in_page']= len(ad_links)
         ads_list.append(result)
-        
         #ads_dic[c]=text
         # Save the data to MongoDB
         save_to_mongo(result, 'olx_ads', 'ads_temp')
         c=c+1
     #print("ads_dic.keys ",len(ads_dic.keys()))
     #print(ads_dic) 
+    print("Number of returned ads from page number: ",str(page_number), " is ",str(len(ads_list)))
     
     return True, ads_list
     
 
+
+
 def scrape_page_flow(driver, page_number, search_keyword):
     # Check if the ChromeDriver is initialized
     if driver is not None:
-        print("")
-        print("scarping_ads_links ")
         ad_links = driver.find_elements(By.CSS_SELECTOR, 'a[href^="/ad/"]')
-        print(f"Number of matching links: {len(ad_links)}")
+        #print(f"Number of matching links: {len(set(ad_links))}")
         mimic_human(driver)
     
-        print("3- scarping_ads_links start")
+        print("3- scarping_ads_links start TODO")
         page_scrapping_status, ads_list = old_scrape_page(driver, ad_links, page_number, search_keyword)
-        print("3- scarping_ads_links done")
+        print("3- scarping_ads_links done TODO")
     
         if page_scrapping_status:
-            counted_items= len(ad_links)
+            counted_items= len(ads_list)
         else:
             counted_items=0
         print("ChromeDriver is initialized and ready to use.")
@@ -407,6 +334,7 @@ def scrape_page_flow(driver, page_number, search_keyword):
 def navigate_to_the_next_page(driver, page_number):
         try:
             print(" 4- navigate_to_the_next_page start")
+            print("navigate to page number:---->", page_number)
             
         
             # Locate the <div> with role="navigation"
@@ -420,7 +348,6 @@ def navigate_to_the_next_page(driver, page_number):
             last_a = last_li.find_element(By.TAG_NAME, 'a')
             href_value = last_a.get_attribute('href')
             print("Extracted href:", href_value)
-            print(page_number)
             
             href_value_new = href_value.split('page=')[0]+"=page="+str(page_number)
             print("href_value_new :", href_value_new)
@@ -447,12 +374,14 @@ def navigate_to_the_next_page(driver, page_number):
                 return True
             else:
                 print("4- navigate to the next page failed")
+                print("")
                 return False
                 
 
         except:
             return False
             print("4- navigate to the next page failed")
+            print("")
 
 def main_page_flow(driver, query):
     print("1-search_with_keyword.... ")
@@ -477,46 +406,43 @@ def main_page_flow(driver, query):
         ads_count=0
     print("Ads Count:", ads_count)
     print("2-scarping_ads_count done...")
+    print("")
     return driver, ads_count
 
 def SCRAPER(keyword, requested_returned_ads_count):
        
-    # Set up Chrome options
-    options = Options()
-    #ua = UserAgent()
-    #options.add_argument(f'user-agent={ua.random}')
-    #options.add_argument("--incognito")
-    #options.add_argument("--headless")  # Run in headless mode
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--start-maximized")
-    options.add_argument("--disable-blink-features=AutomationControlled")  # Help prevent detection ,  adding argument to disable the AutomationControlled flag 
+        # Set up Chrome options
+        options = Options()
+        #ua = UserAgent()
+        #options.add_argument(f'user-agent={ua.random}')
+        #options.add_argument("--incognito")
+        #options.add_argument("--headless")  # Run in headless mode
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--start-maximized")
+        options.add_argument("--disable-blink-features=AutomationControlled")  # Help prevent detection ,  adding argument to disable the AutomationControlled flag 
+        options.add_experimental_option("excludeSwitches", ["enable-automation"]) # exclude the collection of enable-automation switches 
+        options.add_experimental_option("useAutomationExtension", False)  # turn-off userAutomationExtension 
+        options.add_argument("window-size=1920,1080")
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--ignore-certificate-errors")
     
-    options.add_experimental_option("excludeSwitches", ["enable-automation"]) # exclude the collection of enable-automation switches 
-    options.add_experimental_option("useAutomationExtension", False)  # turn-off userAutomationExtension 
-
-    options.add_argument("window-size=1920,1080")
-    options.add_argument("--disable-extensions")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--ignore-certificate-errors")
-
+        # List of proxy servers
+        proxies = [
+            'http://184.82.55.109:8080',
+            'http://188.166.229.121:80',
+            'http://49.49.60.99:8080'
+        ]
+        # Function to get a random proxy
+        def get_random_proxy():
+            return random.choice(proxies)
     
-    # List of proxy servers
-    proxies = [
-        'http://184.82.55.109:8080',
-        'http://188.166.229.121:80',
-        'http://49.49.60.99:8080'
-    ]
-    # Function to get a random proxy
-    def get_random_proxy():
-        return random.choice(proxies)
-
-    status = False
-    query = keyword
-    
+        status = False
+        query = keyword
+        
     # Loop through proxies
-    
-    for _ in range(5):  # Adjust the number of attempts as needed
+   # for _ in range(5):  # Adjust the number of attempts as needed
         
         #proxy = get_random_proxy()
         #options.add_argument(f'--proxy-server={proxy}')
@@ -528,7 +454,6 @@ def SCRAPER(keyword, requested_returned_ads_count):
         driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})") # changing the property of the navigator value for webdriver to undefined
         
         driver.get(end_point)
-
         print(driver.title)
         
         random_delay()
@@ -543,38 +468,49 @@ def SCRAPER(keyword, requested_returned_ads_count):
             target_number_of_ads =0
     
             # 2<150
+
+            
             if (requested_returned_ads_count<=ads_count) :
-                print("requested ads less than the existing ads in the website...")
-                target_number_of_ads= max(requested_returned_ads_count, 300)
+                print("requested ads is suitable...")
+                target_number_of_ads= requested_returned_ads_count
                 retriving_count_message="we will retrive for you "
     
             else:
-                print("requested ads more than the existing ads in the website, retrive all the ads found as much as the scraper can get...")
+                print("requested ads is Not suitable...")
+                #print("requested ads more than the existing ads in the website, retrive all the ads found as much as the scraper can get...")
                 target_number_of_ads=ads_count
                 retriving_count_message= '''you requested ads more than the avilable ads exist on OLX, 
-                                            try generalize your search keyword,
-                                            we will retrive for you '''
-    
+                                            try generalize your search keyword....'''
+
+            print("********************************************")
+            print("requested_returned_ads_count: ",requested_returned_ads_count)
+            print("ads_count: ",ads_count)
+            print("target_number_of_ads: ",target_number_of_ads)
+            print("********************************************")
     
             #scrape 1st page:
             page_scrape_status, retrived_ads_count_from_page_1, ads_list = scrape_page_flow(driver, 1, keyword)
             all_ads_fetched.append(ads_list)
             
             retrived_items_counter = retrived_items_counter + retrived_ads_count_from_page_1
+            print("retrived_items_counter: ", retrived_items_counter)
             
             if target_number_of_ads< retrived_ads_count_from_page_1: # no need to navigate to page 2, 3 , 4, scrape only page 1
-                print("the targeted number of ads is less than the retrived_ads_count_from_page_1 from page 1, no need to navigate to other pages...")
+                print("retrive from page 1 only.")
                 retriving_count_message = retriving_count_message + str(target_number_of_ads) +" ads."
                 return True
     
             else:
-                print("the targeted number of ads is more than the retrived_ads_count from page 1, you have to navigate to page 2, 3, 4...")
-                pages_counter=2
+                print("retrive from other pages.")
+                #print("the targeted number of ads is more than the retrived_ads_count from page 1, you have to navigate to page 2, 3, 4...")
+                pages_counter=1
                 number_to_return = 0
                 
                 while True:
+                    pages_counter = pages_counter+1
                     #80<100 , 110>100
                     if (retrived_items_counter< target_number_of_ads):
+                        
                         print("scrapy didnt reach to the target_number_of_ads, loop till reach the target number...")
                         navigate_to_the_next_page_status = navigate_to_the_next_page(driver , pages_counter)
                         
@@ -583,8 +519,10 @@ def SCRAPER(keyword, requested_returned_ads_count):
                             page_scrape_status, retrived_ads_count, ads_list  = scrape_page_flow(driver, pages_counter, keyword)
                             all_ads_fetched.append(ads_list)
                             
+                            
                             if page_scrape_status:
                                 retrived_items_counter = retrived_items_counter + retrived_ads_count
+                                print("retrived_items_counter: ", retrived_items_counter)
                                 number_to_return = retrived_items_counter
                                 print("crapping other pages in progress")
                                 continue
@@ -599,9 +537,11 @@ def SCRAPER(keyword, requested_returned_ads_count):
                             number_to_return = retrived_items_counter
                             print("error could be happen while navigating to other pages")
                             break
+
+                        print("number_to_return: ", number_to_return)
                             
                         
-                        continue
+                       # continue
     
                     else:
                         print("scrapy reached to the target_number_of_ads, remove extra retrived items...")
@@ -609,11 +549,13 @@ def SCRAPER(keyword, requested_returned_ads_count):
                         #ads_list = ads_list[:target_number_of_ads])
                         break
 
-                    pages_counter = pages_counter+1
-    
-            
+                    
+            print("type all_ads_fetched: ", type(all_ads_fetched))
+            print("all_ads_fetched: ", len(all_ads_fetched))
             all_ads_fetched = [item for sublist in all_ads_fetched for item in sublist]
+            print("all_ads_fetched: ", len(all_ads_fetched))
             all_ads_fetched = all_ads_fetched[:number_to_return+1]
+            print("all_ads_fetched: ", len(all_ads_fetched))
             #print("all_ads_fetched", all_ads_fetched)
     
             '''
@@ -659,7 +601,7 @@ def SCRAPER(keyword, requested_returned_ads_count):
             driver.quit()
             
     
-    return status, all_ads_fetched
+        return status, all_ads_fetched
 
 
 
@@ -695,8 +637,7 @@ def SEND_SAMPLE_TO_EMAIL(sender_email, sender_password, recipient_email, subject
 def keyword_preprocessing(search_keyword):
     if search_keyword is None or search_keyword == "null" or (isinstance(search_keyword, float) and np.isnan(search_keyword)):
         search_keyword=""
-        
-    print("keyword_preprocessing in...")
+
     modified=False
     
     # Remove special characters 
@@ -716,7 +657,6 @@ def keyword_preprocessing(search_keyword):
 
 
 def check_email_is_valid(email):
-    print("check_email_is_valid in...")
     modified=False
     # Define the regular expression for a valid email address
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -727,7 +667,6 @@ def check_email_is_valid(email):
 
 
 def check_sample_size_valid(sample_size):
-    print("check_sample_size_valid in...")
     modified=False
     if sample_size < 20:
         status =False
@@ -865,6 +804,22 @@ def RETRIVE_DATA(search_keyword):
     return  scrap_result
 '''
 
+def list_to_string(input_list):
+    result = []
+
+    for item in input_list:
+        if isinstance(item, dict):
+            # Convert dictionary to string
+            dict_string = ', '.join(f"{key}: {value}" for key, value in item.items())
+            result.append(f"{{ {dict_string} }}")  # Add curly braces for dictionary representation
+        elif isinstance(item, str):
+            result.append(item)
+        else:
+            result.append(str(item))  # Convert other types to string if necessary
+
+    return ' '.join(result)  # Join all elements into a single string
+
+
 def RETRIVE_DATA(search_keyword, sample_size):
     check_result = CHECK_KEYWORD_IN_DB_TODAY(search_keyword, sample_size)
 
@@ -874,8 +829,10 @@ def RETRIVE_DATA(search_keyword, sample_size):
     else:
         # Scrape data
         status, ads = SCRAPER(search_keyword, max(sample_size, 300))
-
-    ads = " ".join(ads)
+    
+    ads = ads[:max(sample_size, 300)]
+    #ads = " ".join(ads)
+    ads= list_to_string(ads)
     return status,  ads
 
 
@@ -884,10 +841,6 @@ def full_process(request_data):
 
     #1- processing the request
     request_processing_status, search_keyword, reciver_email, sample_size = PROCESS_REQUEST(request_data)
-    print(request_processing_status)
-    print(search_keyword)
-    print(reciver_email)
-    print(sample_size)
     if request_processing_status:
         print("1-PROCESS_REQUEST Status Success...")
     
